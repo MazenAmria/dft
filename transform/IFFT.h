@@ -31,8 +31,7 @@ public:
     }
 
     void static ifft(complex_vec& data) {
-        std::complex<double> w = exp(std::complex<double>(0.0,2.0 * M_PI / (double) data.size()));
-        Transform::fft(data, w);
+        Transform::fft(data, true);
         Transform::normalize(data);
     }
 
@@ -41,6 +40,7 @@ private:
         if (data.empty()) {
             throw std::invalid_argument("Input vector cannot be empty");
         }
+        this->X = data;
         this->x = this->X;
         IFFT::ifft(this->x);
     }

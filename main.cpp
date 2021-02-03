@@ -45,8 +45,8 @@ int main() {
         x[i] = _expression.value();
     }
     try {
-        DFT transform(x, fs);
-        IDFT i_transform(transform.transformed(), fs);
+        FFT transform(x, fs);
+        IFFT i_transform(transform.transformed(), fs);
         std::pair<std::vector<double>, std::vector<double>> data;
         while (true) {
             std::cout << "Select: " << std::endl;

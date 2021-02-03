@@ -32,8 +32,7 @@ public:
     }
 
     void static fft(complex_vec& data) {
-        std::complex<double> w = exp(std::complex<double>(0.0,2.0 * M_PI / (double) data.size()));
-        Transform::fft(data, w);
+        Transform::fft(data, false);
     }
 
 private:
@@ -41,6 +40,7 @@ private:
         if (data.empty()) {
             throw std::invalid_argument("Input vector cannot be empty");
         }
+        this->x = data;
         this->X = this->x;
         FFT::fft(this->X);
     }

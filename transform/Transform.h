@@ -12,6 +12,7 @@ protected:
     typedef std::vector<std::complex<double>> complex_vec;
     typedef std::vector<double> real_vec;
     typedef std::pair<std::vector<double>, std::vector<double>> plot;
+    typedef std::complex<double> complex_d;
 
     complex_vec x;
     complex_vec X;
@@ -38,23 +39,24 @@ protected:
         }
     }
 
-    void static fft(complex_vec& data, std::complex<double> w) {
+    void static fft(complex_vec& data, bool inverse) {
         unsigned int n = data.size();
         if ((n & (n - 1)) != 0) {
             Transform::ensure_length(data);
+            n = data.size();
         }
         if (n == 1) {
             return;
         }
         complex_vec even(n / 2), odd(n / 2);
-        for (int i = 0; 2 * i < n; i++) {
-            even[i] = data[2*i];
-            odd[i] = data[2*i+1];
+        for (int i = 0; i < n / 2; i++) {
+            even[i] = data[2 * i];
+            odd[i] = data[2 * i + 1];
         }
-        Transform::fft(even, w);
-        Transform::fft(odd, w);
+        Transform::fft(even, inverse);
+        Transform::fft(odd, inverse);
 
-        std::complex<double> w_ = 1;
+        complex_d w_ = 1, w = exp(complex_d(0.0,2.0 * M_PI / (double) data.size()));
         for (unsigned int i = 0; i < data.size() / 2; i++) {
             data[i] = even[i] + w_ * odd[i];
             data[i + n / 2] = even[i] - w_ * odd[i];
@@ -109,23 +111,25 @@ public:
 
     plot amplitude_spectrum () {
         complex_vec data = this->X;
-        Transform::normalize(data);
-        Transform::shift(data);
         real_vec amplitude(data.size());
         for (unsigned int i = 0; i < data.size(); i++) {
             amplitude[i] = std::abs(data[i]);
+            if (amplitude[i] < 1e-6 && amplitude[i] > -1e-6)
+                amplitude[i] = 0;
         }
+        Transform::shift(amplitude);
+        Transform::normalize(amplitude);
         return {this->shifted_frequency(), amplitude};
     }
 
     plot phase_spectrum () {
         complex_vec data = this->X;
-        Transform::normalize(data);
-        Transform::shift(data);
         real_vec phase(data.size());
         for (unsigned int i = 0; i < data.size(); i++) {
             phase[i] = std::arg(data[i]);
         }
+        Transform::shift(phase);
+        Transform::unwrap(phase);
         return {this->shifted_frequency(), phase};
     }
 
@@ -174,6 +178,22 @@ public:
     void static normalize(T& data) {
         for (unsigned int i = 0; i < data.size(); i++) {
             data[i] /= data.size();
+        }
+    }
+
+    void static unwrap(real_vec& data) {
+        // TODO: check Transform::unwrap (data) {...}
+        real_vec new_data(data.size());
+        new_data[(data.size() - 1) / 2] = 0;
+        for (unsigned int i = (data.size() - 1) / 2; i > 0; i--) {
+            double d = data[i - 1] - data[i];
+            d = d > M_PI ? d - 2 * M_PI : (d < -M_PI ? d + 2 * M_PI : d);
+            new_data[i - 1] = new_data[i] + d;
+        }
+        for (unsigned int i = (data.size() + 1) / 2; i < data.size(); i++) {
+            double d = data[i] - data[i - 1];
+            d = d > M_PI ? d - 2 * M_PI : (d < -M_PI ? d + 2 * M_PI : d);
+            new_data[i] = new_data[i - 1] + d;
         }
     }
 
